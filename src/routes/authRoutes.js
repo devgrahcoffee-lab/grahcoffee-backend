@@ -46,4 +46,56 @@ router.post('/login', authCtrl.login);
  */
 router.post('/logout', authCtrl.logout);
 
+/**
+ * @swagger
+ * /api/auth/lupa-sandi:
+ *   post:
+ *     summary: Generate password sementara untuk karyawan yang lupa sandi
+ *     tags: [Otentikasi]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "budi@grahcoffee.id"
+ *     responses:
+ *       200:
+ *         description: Password sementara dibuat dan dikembalikan (untuk disampaikan Admin ke karyawan)
+ */
+router.post('/lupa-sandi', authCtrl.lupaSandi);
+
+/**
+ * @swagger
+ * /api/auth/ganti-sandi:
+ *   post:
+ *     summary: Ganti password sendiri (perlu login aktif)
+ *     tags: [Otentikasi]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [password_lama, password_baru]
+ *             properties:
+ *               password_lama:
+ *                 type: string
+ *               password_baru:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Password berhasil diubah. Semua sesi lama dicabut.
+ *       401:
+ *         description: Password lama tidak sesuai.
+ */
+router.post('/ganti-sandi', authCtrl.gantiSandi);
+
 module.exports = router;
