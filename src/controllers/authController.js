@@ -37,8 +37,10 @@ exports.login = async (req, res) => {
         success: true,
         message: 'Akses masuk diberikan.',
         token: token,
-        role: user.role, // "admin" atau "karyawan" (Frontend akan meredirect sesuai role ini)
-        user_id: user.id
+        role: user.role,
+        user_id: user.id,
+        username: user.username || user.email.split('@')[0],
+        email: user.email
     });
 };
 

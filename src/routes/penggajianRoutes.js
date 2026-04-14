@@ -62,5 +62,7 @@ router.get('/semua', verifyToken, requireAdmin, pengCtrl.getAllGaji);
  *         description: Slip gaji dikembalikan
  */
 router.get('/slip-pribadi', verifyToken, pengCtrl.getInfoGajiPribadi);
+router.get('/estimasi-gaji', verifyToken, requireAdmin, pengCtrl.getEstimasiBulanIni);
 
 module.exports = router;
+

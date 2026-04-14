@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authCtrl = require('../controllers/authController');
+const { verifyToken } = require('../middlewares/auth');
 
 /**
  * @swagger
@@ -96,6 +97,6 @@ router.post('/lupa-sandi', authCtrl.lupaSandi);
  *       401:
  *         description: Password lama tidak sesuai.
  */
-router.post('/ganti-sandi', authCtrl.gantiSandi);
+router.post('/ganti-sandi', verifyToken, authCtrl.gantiSandi);
 
 module.exports = router;

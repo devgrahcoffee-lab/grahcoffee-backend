@@ -1,5 +1,19 @@
 const supabase = require('../config/supabaseClient');
 
+// ─── HELPER: Waktu saat ini dalam timezone WIB (UTC+7) ───────────────────────
+const nowWIB = () => {
+    // Offset WIB = UTC + 7 jam
+    const utc = new Date();
+    const wib = new Date(utc.getTime() + 7 * 60 * 60 * 1000);
+    return wib;
+};
+
+// Format tanggal YYYY-MM-DD dari objek Date WIB
+const toDateStr = (wib) => wib.toISOString().split('T')[0];
+
+// Format waktu HH:mm:ss dari objek Date WIB
+const toTimeStr = (wib) => wib.toISOString().split('T')[1].split('.')[0];
+
 // Helper fungsi untuk menghitung denda Rp 5000 per blok 15 menit
 const hitungDendaKeterlambatan = (jamAbsen, jamShift) => {
     const parseMenit = (t) => {
@@ -25,10 +39,10 @@ exports.scanBarcode = async (req, res) => {
     const { data: kar } = await supabase.from('karyawan').select('id').eq('user_id', user_id).single();
     if (!kar) return res.status(404).json({ success: false, error: 'User tidak valid sebagai karyawan' });
 
-    // Gunakan tanggal/jam server atau dari body
-    const now = new Date();
-    const tanggalHariIni = now.toISOString().split('T')[0];
-    const waktuSekarang = now.toTimeString().split(' ')[0]; // HH:mm:ss
+    // Gunakan waktu WIB (GMT+7)
+    const sekarang = nowWIB();
+    const tanggalHariIni = toDateStr(sekarang);
+    const waktuSekarang = toTimeStr(sekarang); // HH:mm:ss dalam WIB
 
     // 2. Cari Jadwal Kerja hari ini
     const { data: jadwal } = await supabase
@@ -85,10 +99,11 @@ exports.scanBarcodeAdmin = async (req, res) => {
     
     if (!karyawan_id) return res.status(400).json({ success: false, error: 'Kode Barcode Tidak Valid' });
 
-    const now = new Date();
-    const tanggalHariIni = now.toISOString().split('T')[0];
-    let waktuSekarang = now.toTimeString().split(' ')[0]; 
-    if(req.body.waktu_simulasi) waktuSekarang = req.body.waktu_simulasi; // Untuk testing jika perlu
+    // Gunakan waktu WIB (GMT+7)
+    const sekarang = nowWIB();
+    const tanggalHariIni = toDateStr(sekarang);
+    let waktuSekarang = toTimeStr(sekarang); // HH:mm:ss dalam WIB
+    if (req.body.waktu_simulasi) waktuSekarang = req.body.waktu_simulasi; // Override untuk testing
     
     const { data: jadwal } = await supabase.from('jadwal_kerja').select('*, shift(*)').eq('karyawan_id', karyawan_id).eq('tanggal', tanggalHariIni).single();
     if (!jadwal) return res.status(404).json({ success: false, error: 'Karyawan tidak memiliki jadwal dinas hari ini' });

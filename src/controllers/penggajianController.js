@@ -80,3 +80,63 @@ exports.getAllGaji = async (req, res) => {
     if (error) return res.status(500).json({ success: false, error: error.message });
     res.json({ success: true, data });
 };
+
+exports.getEstimasiBulanIni = async (req, res) => {
+    try {
+        // Gunakan waktu WIB (UTC+7) untuk menentukan bulan berjalan
+        const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
+        const bulan = nowWIB.getUTCMonth() + 1;
+        const tahun = nowWIB.getUTCFullYear();
+        const startDate = `${tahun}-${String(bulan).padStart(2, '0')}-01`;
+        const endDate   = `${tahun}-${String(bulan).padStart(2, '0')}-31`;
+
+        // Tarik karyawan aktif beserta data absensi bulan ini
+        const { data: listKaryawan } = await supabase
+            .from('karyawan')
+            .select('id, posisi')
+            .eq('status', 'aktif');
+
+        if (!listKaryawan || listKaryawan.length === 0) {
+            return res.json({ success: true, data: { estimasiTotal: 0, jumlahKaryawan: 0, bulan, tahun } });
+        }
+
+        let estimasiTotal = 0;
+        let totalPotongan = 0;
+
+        for (const kar of listKaryawan) {
+            const { data: absenBulanIni } = await supabase
+                .from('absensi')
+                .select('potongan_terlambat')
+                .eq('karyawan_id', kar.id)
+                .gte('tanggal', startDate)
+                .lte('tanggal', endDate);
+
+            const totalHadir = absenBulanIni ? absenBulanIni.length : 0;
+            const potongan = absenBulanIni
+                ? absenBulanIni.reduce((acc, a) => acc + parseFloat(a.potongan_terlambat || 0), 0)
+                : 0;
+
+            // Rule bisnis: Barista Rp 46.666/hari, lainnya Rp 43.333/hari
+            const gajiHarian = kar.posisi?.toLowerCase() === 'barista' ? 46666 : 43333;
+            const gajiPokok = totalHadir * gajiHarian;
+            const gajiBersih = gajiPokok - potongan;
+
+            estimasiTotal += gajiBersih;
+            totalPotongan += potongan;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                estimasiTotal,
+                totalPotongan,
+                jumlahKaryawan: listKaryawan.length,
+                bulan,
+                tahun,
+                namaBulan: nowWIB.toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
