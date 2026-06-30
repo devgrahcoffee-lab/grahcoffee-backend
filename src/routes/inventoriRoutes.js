@@ -102,6 +102,14 @@ router.delete('/bahan-baku/:id', verifyToken, requireAdmin, inventoriCtrl.delete
 /**
  * @swagger
  * /api/inventori/log:
+ *   get:
+ *     summary: Melihat riwayat log masuk dan keluar stok
+ *     tags: [Inventori]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Riwayat log dimuat
  *   post:
  *     summary: Mencatat sirkulasi log (bahan ditarik / ditambah)
  *     tags: [Inventori]
@@ -128,5 +136,6 @@ router.delete('/bahan-baku/:id', verifyToken, requireAdmin, inventoriCtrl.delete
  *         description: Transaksi terekam
  */
 router.post('/log', verifyToken, requireAdmin, inventoriCtrl.catatLogInventori);
+router.get('/log', verifyToken, requireAdmin, inventoriCtrl.getLogInventori);
 
 module.exports = router;

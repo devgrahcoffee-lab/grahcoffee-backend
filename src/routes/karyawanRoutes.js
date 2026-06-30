@@ -65,6 +65,7 @@ routerInst.get('/profil', verifyToken, karyawanCtrl.getProfilPribadi);
  *         description: Berhasil menyimpan
  */
 routerInst.get('/', verifyToken, requireAdmin, karyawanCtrl.getAllKaryawan);
+routerInst.get('/:id', verifyToken, requireAdmin, karyawanCtrl.getKaryawanById);
 routerInst.post('/', verifyToken, requireAdmin, karyawanCtrl.addKaryawan);
 
 /**

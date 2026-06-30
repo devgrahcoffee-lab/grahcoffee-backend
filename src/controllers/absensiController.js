@@ -30,6 +30,16 @@ const hitungDendaKeterlambatan = (jamAbsen, jamShift) => {
     return { telat: telat, denda: blok15Menit * 5000 };
 };
 
+const normalizeKaryawan = (row) => {
+    if (!row) return row;
+    return {
+        ...row,
+        tanggal_bergabung: row.created_at,
+    };
+};
+
+const selectRiwayat = '*, jadwal_kerja(shift(nama_shift, jam_masuk, jam_keluar))';
+
 exports.scanBarcode = async (req, res) => {
     // Diasumsikan endpoint dipanggil dari HP karyawan (via token)
     // Terdapat data tanggal, dan jam saat scan dilakukan (simulasi waktu sistem)
@@ -147,4 +157,61 @@ exports.getRiwayatPribadi = async (req, res) => {
         
     if (error) return res.status(500).json({ success: false, error: error.message });
     res.json({ success: true, data });
+};
+
+exports.getLaporanPribadi = async (req, res) => {
+    const user_id = req.user.id;
+    const { data: karyawan, error: errKaryawan } = await supabase
+        .from('karyawan')
+        .select('id, nama, nomor_telepon, posisi, status, created_at')
+        .eq('user_id', user_id)
+        .single();
+
+    if (errKaryawan) return res.status(500).json({ success: false, error: errKaryawan.message });
+    if (!karyawan) return res.status(404).json({ success: false, error: 'Data karyawan tidak ditemukan' });
+
+    const { data: absensi, error: errAbsensi } = await supabase
+        .from('absensi')
+        .select(selectRiwayat)
+        .eq('karyawan_id', karyawan.id)
+        .order('tanggal', { ascending: true });
+
+    if (errAbsensi) return res.status(500).json({ success: false, error: errAbsensi.message });
+
+    res.json({
+        success: true,
+        data: {
+            karyawan: normalizeKaryawan(karyawan),
+            absensi: absensi || [],
+        },
+    });
+};
+
+exports.getLaporanKaryawan = async (req, res) => {
+    const { id } = req.params;
+
+    const { data: karyawan, error: errKaryawan } = await supabase
+        .from('karyawan')
+        .select('id, nama, nomor_telepon, posisi, status, created_at')
+        .eq('id', id)
+        .single();
+
+    if (errKaryawan) return res.status(500).json({ success: false, error: errKaryawan.message });
+    if (!karyawan) return res.status(404).json({ success: false, error: 'Data karyawan tidak ditemukan' });
+
+    const { data: absensi, error: errAbsensi } = await supabase
+        .from('absensi')
+        .select(selectRiwayat)
+        .eq('karyawan_id', id)
+        .order('tanggal', { ascending: true });
+
+    if (errAbsensi) return res.status(500).json({ success: false, error: errAbsensi.message });
+
+    res.json({
+        success: true,
+        data: {
+            karyawan: normalizeKaryawan(karyawan),
+            absensi: absensi || [],
+        },
+    });
 };

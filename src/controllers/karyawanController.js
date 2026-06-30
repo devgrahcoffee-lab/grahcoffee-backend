@@ -1,5 +1,13 @@
 const supabase = require('../config/supabaseClient');
 
+const normalizeKaryawan = (row) => {
+    if (!row) return row;
+    return {
+        ...row,
+        tanggal_bergabung: row.created_at,
+    };
+};
+
 exports.getAllKaryawan = async (req, res) => {
     const { data, error } = await supabase.from('karyawan').select('*, users(email, username, role, status)');
     if (error) return res.status(500).json({ success: false, error: error.message });
@@ -62,5 +70,17 @@ exports.getProfilPribadi = async (req, res) => {
     const user_id = req.user.id;
     const { data, error } = await supabase.from('karyawan').select('*').eq('user_id', user_id).single();
     if (error) return res.status(500).json({ success: false, error: error.message });
-    res.json({ success: true, data });
+    res.json({ success: true, data: normalizeKaryawan(data) });
+};
+
+exports.getKaryawanById = async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from('karyawan')
+        .select('*, users(email, username, role, status)')
+        .eq('id', id)
+        .single();
+
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    res.json({ success: true, data: normalizeKaryawan(data) });
 };

@@ -56,3 +56,21 @@ exports.catatLogInventori = async (req, res) => {
 
     res.json({ success: true, stok_terbaru: stok_baru, log: log[0] });
 };
+
+exports.getLogInventori = async (req, res) => {
+    const { bahan_baku_id } = req.query;
+
+    let query = supabase
+        .from('log_inventori')
+        .select('id, jenis, jumlah, keterangan, tanggal, bahan_baku(id, nama, satuan)')
+        .order('tanggal', { ascending: false });
+
+    if (bahan_baku_id) {
+        query = query.eq('bahan_baku_id', bahan_baku_id);
+    }
+
+    const { data, error } = await query;
+    if (error) return res.status(500).json({ success: false, error: error.message });
+
+    res.json({ success: true, data: data || [] });
+};

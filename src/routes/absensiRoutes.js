@@ -38,6 +38,8 @@ router.post('/admin-scan', verifyToken, requireAdmin, absensiCtrl.scanBarcodeAdm
  *         description: Riwayat absensi sukses dimuat
  */
 router.get('/riwayat-saya', verifyToken, absensiCtrl.getRiwayatPribadi);
+router.get('/laporan-saya', verifyToken, absensiCtrl.getLaporanPribadi);
+router.get('/laporan-karyawan/:id', verifyToken, requireAdmin, absensiCtrl.getLaporanKaryawan);
 
 /**
  * @swagger

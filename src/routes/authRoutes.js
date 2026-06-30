@@ -51,7 +51,7 @@ router.post('/logout', authCtrl.logout);
  * @swagger
  * /api/auth/lupa-sandi:
  *   post:
- *     summary: Generate password sementara untuk karyawan yang lupa sandi
+ *     summary: Reset password karyawan via email atau nomor HP terdaftar
  *     tags: [Otentikasi]
  *     requestBody:
  *       required: true
@@ -59,14 +59,18 @@ router.post('/logout', authCtrl.logout);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [email]
+ *             required: [identifier, password_baru]
  *             properties:
- *               email:
+ *               identifier:
  *                 type: string
  *                 example: "budi@grahcoffee.id"
+ *               password_baru:
+ *                 type: string
+ *               konfirmasi_password:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Password sementara dibuat dan dikembalikan (untuk disampaikan Admin ke karyawan)
+ *         description: Password berhasil diubah
  */
 router.post('/lupa-sandi', authCtrl.lupaSandi);
 

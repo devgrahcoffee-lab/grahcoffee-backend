@@ -57,41 +57,83 @@ exports.logout = async (req, res) => {
 };
 
 exports.lupaSandi = async (req, res) => {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email wajib diisi.' });
+    const identifier = (req.body.identifier || req.body.email || req.body.nomor_telepon || '').trim();
+    const { password_baru, konfirmasi_password } = req.body;
 
-    // Cek apakah email terdaftar
-    const { data: user, error } = await supabase
+    if (!identifier) {
+        return res.status(400).json({ success: false, message: 'Email atau nomor HP wajib diisi.' });
+    }
+
+    if (!password_baru) {
+        return res.status(400).json({ success: false, message: 'Password baru wajib diisi.' });
+    }
+
+    if (password_baru.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password baru minimal 6 karakter.' });
+    }
+
+    if (konfirmasi_password && password_baru !== konfirmasi_password) {
+        return res.status(400).json({ success: false, message: 'Konfirmasi password tidak cocok.' });
+    }
+
+    let user = null;
+
+    const { data: userByEmail } = await supabase
         .from('users')
         .select('id, email, status')
-        .eq('email', email)
-        .single();
+        .eq('email', identifier)
+        .maybeSingle();
 
-    if (error || !user) {
-        // Kembalikan pesan netral agar tidak bocorkan info akun terdaftar
-        return res.json({ success: true, message: 'Jika email terdaftar, password sementara telah dibuat.' });
+    if (userByEmail) {
+        user = userByEmail;
+    } else {
+        const { data: karyawanByPhone, error: phoneError } = await supabase
+            .from('karyawan')
+            .select('user_id')
+            .eq('nomor_telepon', identifier)
+            .maybeSingle();
+
+        if (phoneError) {
+            return res.status(500).json({ success: false, message: 'Gagal memeriksa data nomor HP.', details: phoneError.message });
+        }
+
+        if (karyawanByPhone?.user_id) {
+            const { data: userByPhone, error: userPhoneError } = await supabase
+                .from('users')
+                .select('id, email, status')
+                .eq('id', karyawanByPhone.user_id)
+                .maybeSingle();
+
+            if (userPhoneError) {
+                return res.status(500).json({ success: false, message: 'Gagal memuat data akun.', details: userPhoneError.message });
+            }
+
+            user = userByPhone;
+        }
+    }
+
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'Data akun tidak ditemukan. Gunakan email atau nomor HP yang terdaftar.' });
     }
 
     if (user.status !== 'aktif') {
         return res.status(403).json({ success: false, message: 'Akun berstatus non-aktif.' });
     }
 
-    // Generate password sementara 8 karakter alfanumerik
-    const tempPassword = crypto.randomBytes(4).toString('hex'); // e.g. "a1b2c3d4"
-
     const { error: updateError } = await supabase
         .from('users')
-        .update({ password_hash: tempPassword })
+        .update({ password_hash: password_baru })
         .eq('id', user.id);
 
     if (updateError) {
-        return res.status(500).json({ success: false, message: 'Gagal memperbarui password.' });
+        return res.status(500).json({ success: false, message: 'Gagal memperbarui password.', details: updateError.message });
     }
+
+    await supabase.from('sessions').delete().eq('user_id', user.id);
 
     res.json({
         success: true,
-        message: 'Password sementara berhasil dibuat. Sampaikan kepada karyawan dan minta segera diubah.',
-        temp_password: tempPassword, // Tampilkan ke Admin
+        message: 'Password berhasil diubah. Silakan login kembali menggunakan password baru.',
     });
 };
 
