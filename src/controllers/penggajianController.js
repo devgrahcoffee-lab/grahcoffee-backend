@@ -163,7 +163,17 @@ exports.getEstimasiBulanIni = async (req, res) => {
             .eq('users.status', 'aktif');
 
         if (!listKaryawan || listKaryawan.length === 0) {
-            return res.json({ success: true, data: { estimasiTotal: 0, jumlahKaryawan: 0, bulan, tahun } });
+            return res.json({
+                success: true,
+                data: {
+                    estimasiTotal: 0,
+                    totalPotongan: 0,
+                    jumlahKaryawan: 0,
+                    bulan,
+                    tahun,
+                    namaBulan: nowWIB.toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+                }
+            });
         }
 
         let estimasiTotal = 0;
@@ -185,9 +195,7 @@ exports.getEstimasiBulanIni = async (req, res) => {
             // Rule bisnis: Barista Rp 46.666/hari, lainnya Rp 43.333/hari
             const gajiHarian = kar.posisi?.toLowerCase() === 'barista' ? 46666 : 43333;
             const gajiPokok = totalHadir * gajiHarian;
-            const gajiBersih = gajiPokok - potongan;
-
-            estimasiTotal += gajiBersih;
+            estimasiTotal += gajiPokok;
             totalPotongan += potongan;
         }
 
